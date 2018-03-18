@@ -1,6 +1,6 @@
 package com.company;
 
-import com.company.filemanagement.FileManager;
+import com.company.filemanagement.FileWrapper;
 import com.company.filemanagement.common.FileManagerUtils;
 import com.company.taggedword.TaggedWord;
 import com.company.taggedword.TaggedWordFactory;
@@ -30,8 +30,8 @@ public class Main
     public static void main(String[] args)
     {
         final FileManagerUtils fileManagerUtils = new FileManagerUtils();
-        final FileManager inFile = new FileManager(FileManager.PROGRAM_PATH, "input.txt", FileManager.UTF8);
-        final FileManager outFile = new FileManager(FileManager.PROGRAM_PATH, "output.txt", FileManager.UTF8);
+        final FileWrapper inFile = new FileWrapper(FileWrapper.PROGRAM_PATH, "input.txt", FileWrapper.UTF8);
+        final FileWrapper outFile = new FileWrapper(FileWrapper.PROGRAM_PATH, "output.txt", FileWrapper.UTF8);
 
         final MaxentTagger tagger = new MaxentTagger(TAGGER_PATH);
 
@@ -43,38 +43,44 @@ public class Main
             //clear contents of outfile from previous run
             fileManagerUtils.clearFile(outFile.getFile());
 
-            //read in entire text file to String
-            final String originalFileContents = fileManagerUtils.readFile(inFile.getFile(), inFile.getEncoding());
-            System.out.println("Original file contents: " + originalFileContents);
+            String line = "";
+            while (null != line) {
+                //read in entire text file to String
+                line = fileManagerUtils.readNextLine(inFile.getFile());
+                if (null != line) {
+                    System.out.println("Original file contents: " + line);
 
-            // strips off all non-ASCII characters from input
-            final String noAsciiFileContents = originalFileContents.replaceAll("[^\\x00-\\x7F]", "");
-            System.out.println("No ASCII file contents: " + noAsciiFileContents);
+                    // strips off all non-ASCII characters from input
+                    final String noAsciiFileContents = line.replaceAll("[^\\x00-\\x7F]", "");
+                    System.out.println("No ASCII file contents: " + noAsciiFileContents);
 
-            //tag each word with its respective POS
-            final String fileContentsTagged = tagger.tagString(noAsciiFileContents);
-            System.out.println("File contents tagged: " + fileContentsTagged);
+                    //tag each word with its respective POS
+                    final String fileContentsTagged = tagger.tagString(noAsciiFileContents);
+                    System.out.println("File contents tagged: " + fileContentsTagged);
 
-            //create list of taggedWords from tagged fileContent String
-            final List<TaggedWord> taggedWords = processTaggedWords(fileContentsTagged);
+                    //create list of taggedWords from tagged fileContent String
+                    final List<TaggedWord> taggedWords = processTaggedWords(fileContentsTagged);
+
+                    //prepare english words for uasi translation
+                    //make necessary modifications
+                    primeTheTranslator(taggedWords);
+
+                    //remove "will" and add "P" to the next word
+                    List<TaggedWord> taggedWordsWithFuture = accountForFutureTense(taggedWords);
+
+                    //convert processed english words to String of uasi words
+                    String uasiContent = translateToUasi(taggedWordsWithFuture);
+                    System.out.println("Uasi Content: " + uasiContent);
+
+                    //print uasi result
+                    fileManagerUtils.writeToFile(outFile.getFile(), uasiContent, true);
+                }
+            }
 
             //TODO: THIS DOESN'T WORK YET
             //convert irregular plural english noun
             //to its normal singular form
             //pluralToSingularForm(taggedWords);
-            //prepare english words for uasi translation
-            //make necessary modifications
-            primeTheTranslator(taggedWords);
-
-            //remove "will" and add "P" to the next word
-            List<TaggedWord> taggedWordsWithFuture = accountForFutureTense(taggedWords);
-
-            //convert processed english words to String of uasi words
-            String uasiContent = translateToUasi(taggedWordsWithFuture);
-            System.out.println("Uasi Content: " + uasiContent);
-
-            //print uasi result
-            fileManagerUtils.writeToFile(outFile.getFile(), uasiContent);
         }
         catch (IOException ex)
         {

@@ -1,31 +1,35 @@
 package com.company.filemanagement.common;
 
-import com.company.filemanagement.FileManager;
+import com.company.filemanagement.FileWrapper;
 
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.nio.charset.Charset;
-import java.nio.file.Files;
+import java.util.Scanner;
 
 public class FileManagerUtils {
-    private final FileManager fileManager;
+    private final FileWrapper FILE_WRAPPER;
+    private final String NEW_LINE = System.lineSeparator();
+    private String lastInstanceOfLine;
 
     public FileManagerUtils() {
-        this.fileManager = null;
+        this.FILE_WRAPPER = null;
+        this.lastInstanceOfLine = "";
     }
 
-    public FileManagerUtils(final FileManager fileManager) {
-        this.fileManager = fileManager;
+    public FileManagerUtils(final FileWrapper FILE_WRAPPER) {
+        this.FILE_WRAPPER = FILE_WRAPPER;
+        this.lastInstanceOfLine = "";
     }
 
     /*
     Creates directory if it is not found.
-    Uses file from fileManager.
+    Uses file from FILE_WRAPPER.
     Returns if the directory was created.
      */
     public boolean createDirectory() {
-        return createDirectorIfNotFound(fileManager.getFilePath());
+        return createDirectorIfNotFound(FILE_WRAPPER.getFilePath());
     }
 
     /*
@@ -38,7 +42,7 @@ public class FileManagerUtils {
     }
 
     public boolean deleteDirectory() {
-        return deleteDirectoryIfExists(fileManager.getFilePath());
+        return deleteDirectoryIfExists(FILE_WRAPPER.getFilePath());
     }
 
     public boolean deleteDirectory(final File file) {
@@ -46,7 +50,7 @@ public class FileManagerUtils {
     }
 
     public boolean createFile() throws IOException {
-        return createFileIfNotFound(fileManager.getFile());
+        return createFileIfNotFound(FILE_WRAPPER.getFile());
     }
 
     public boolean createFile(final File file) throws IOException {
@@ -55,14 +59,14 @@ public class FileManagerUtils {
 
     /*
     Clears the file.
-    Uses fileManager file.
+    Uses FILE_WRAPPER file.
      */
     public boolean clearFile() throws IOException {
-        if (!fileManager.getFile().exists()) {
+        if (!FILE_WRAPPER.getFile().exists()) {
             return false;
         }
 
-        try (PrintWriter pw = new PrintWriter(fileManager.getFile())) {
+        try (PrintWriter pw = new PrintWriter(FILE_WRAPPER.getFile())) {
             pw.print("");
             return true;
         }
@@ -83,24 +87,62 @@ public class FileManagerUtils {
         }
     }
 
-    public String readFile() throws IOException {
-        final byte[] encoded = Files.readAllBytes(fileManager.getFile().toPath());
-        return new String(encoded, fileManager.getEncoding());
+    public String readNextLine() throws IOException {
+        try(Scanner scanner = new Scanner(FILE_WRAPPER.getFile())) {
+            scanner.useDelimiter(NEW_LINE);
+            String line;
+            final boolean hasNext = scanner.hasNext();
+            if (lastInstanceOfLine == "" && hasNext) {
+                line = scanner.next();
+                lastInstanceOfLine = line;
+                return line;
+            } else if (hasNext) {
+                while (scanner.hasNext()) {
+                    if (scanner.next() != lastInstanceOfLine) {
+                        continue;
+                    }
+                    line = scanner.next();
+                    lastInstanceOfLine = line;
+                    return line;
+                }
+            }
+        }
+        return null;
     }
 
-    public String readFile(final File file, final Charset encoding) throws IOException {
-        final byte[] encoded = Files.readAllBytes(file.toPath());
-        return new String(encoded, encoding);
+    public String readNextLine(final File file) throws IOException {
+        try(Scanner scanner = new Scanner(file)) {
+            scanner.useDelimiter(NEW_LINE);
+            String line;
+            final boolean hasNext = scanner.hasNext();
+            if ("".equals(lastInstanceOfLine) && hasNext) {
+                line = scanner.next();
+                lastInstanceOfLine = line;
+                return line;
+            } else if (hasNext) {
+                while (scanner.hasNext()) {
+                    line = scanner.next();
+                    if (!line.equals(lastInstanceOfLine)) {
+                        continue;
+                    } else if (scanner.hasNext()) {
+                        line = scanner.next();
+                        lastInstanceOfLine = line;
+                        return line;
+                    }
+                }
+            }
+        }
+        return null;
     }
 
-    public void writeToFile(final String output) throws IOException {
-        try (PrintWriter pw = new PrintWriter(fileManager.getFile())) {
+    public void writeToFile(final String output, final boolean append) throws IOException {
+        try (PrintWriter pw = new PrintWriter(new FileWriter(FILE_WRAPPER.getFile(), append))) {
             pw.println(output);
         }
     }
 
-    public void writeToFile(final File file, final String output) throws IOException {
-        try (PrintWriter pw = new PrintWriter(file)) {
+    public void writeToFile(final File file, final String output, final boolean append) throws IOException {
+        try (PrintWriter pw = new PrintWriter(new FileWriter(file, append))) {
             pw.println(output);
         }
     }
