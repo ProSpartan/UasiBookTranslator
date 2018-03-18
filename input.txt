@@ -1,4 +1,9 @@
-Hello, World!
-What's your name?
-Where are we going?
-What will we do?
+Aeiou
+uoiea
+Blue
+Black
+Red
+Green
+Yellow
+White
+Sea

@@ -5,6 +5,7 @@ import com.company.filemanagement.common.FileManagerUtils;
 import com.company.taggedword.TaggedWord;
 import com.company.taggedword.TaggedWordFactory;
 
+import com.company.translator.IrregularWords;
 import com.company.translator.PrimeTheTranslator;
 import edu.stanford.nlp.tagger.maxent.MaxentTagger;
 
@@ -217,7 +218,8 @@ public class Main
         String word = englishWord;
         if (isExceptionWord(word))
         {
-            return convertExceptionWord(word);
+            final IrregularWords irregularWords = IrregularWords.create(word);
+            return irregularWords.getTranslatedWord();
         }
         word = replaceDoubleLetter(word);
         word = shiftVowels(word);
@@ -244,7 +246,7 @@ public class Main
         return false;
     }
 
-    public static String convertExceptionWord(String englishWord)
+    /*public static String convertExceptionWord(String englishWord)
     {
         String w = "";
         switch (englishWord)
@@ -287,7 +289,7 @@ public class Main
                 break;
         }
         return w;
-    }
+    }*/
 
     public static String replaceDoubleLetter(String word)
     {
